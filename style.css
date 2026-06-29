@@ -1,0 +1,856 @@
+/* BlockWord - Minecraft风格英语游戏 CSS */
+
+/* ===== 字体与全局样式 ===== */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --mc-brown: #7B4F2E;
+  --mc-dark-brown: #4a2e1a;
+  --mc-green: #5C8A2C;
+  --mc-dark-green: #3a5c1a;
+  --mc-dirt: #8B5E3C;
+  --mc-grass-top: #6AAA40;
+  --mc-stone: #8D8D8D;
+  --mc-coal: #2a2a2a;
+  --mc-gold: #E6C700;
+  --mc-diamond: #4CE3E3;
+  --mc-sky: #6DB6FF;
+  --mc-sky-dark: #1e3a5f;
+  --mc-wood: #B8862A;
+  --mc-leaves: #3C7A1E;
+  --mc-text: #F0F0F0;
+  --mc-shadow: #1a1a1a;
+  --mc-highlight: #fff;
+  --mc-btn-bg: #5a8a00;
+  --mc-btn-hover: #7ab800;
+  --mc-btn-border: #2a4a00;
+  --mc-wrong: #cc3333;
+  --mc-correct: #33cc33;
+}
+
+body {
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  background: var(--mc-sky-dark);
+  color: var(--mc-text);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+/* ===== 屏幕切换 ===== */
+.screen {
+  display: none;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* ===== 开始屏幕 ===== */
+#start-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #87CEEB 0%, #4a90d9 40%, #6AAA40 65%, #8B5E3C 80%, #5C3A1A 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.start-bg-clouds {
+  position: absolute;
+  top: 10%;
+  width: 100%;
+  pointer-events: none;
+}
+
+.cloud-block {
+  position: absolute;
+  background: white;
+  image-rendering: pixelated;
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.15);
+}
+
+.start-logo {
+  text-align: center;
+  z-index: 10;
+  animation: floatLogo 3s ease-in-out infinite;
+}
+
+@keyframes floatLogo {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.start-logo h1 {
+  font-size: clamp(24px, 5vw, 48px);
+  color: #FFD700;
+  text-shadow: 4px 4px 0 #7B4000, -2px -2px 0 #7B4000, 2px -2px 0 #7B4000, -2px 2px 0 #7B4000;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+}
+
+.start-logo .subtitle {
+  font-size: clamp(8px, 1.5vw, 14px);
+  color: #90EE90;
+  text-shadow: 2px 2px 0 #1a4a1a;
+  margin-bottom: 40px;
+}
+
+.start-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 10;
+}
+
+/* ===== 像素风格按钮 ===== */
+.mc-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(8px, 1.5vw, 12px);
+  color: var(--mc-text);
+  background: var(--mc-btn-bg);
+  border: none;
+  padding: 12px 32px;
+  cursor: pointer;
+  text-shadow: 2px 2px 0 #000;
+  position: relative;
+  min-width: 220px;
+  transition: transform 0.1s;
+  image-rendering: pixelated;
+
+  /* 像素边框效果 */
+  box-shadow:
+    inset -4px -4px 0 var(--mc-btn-border),
+    inset 4px 4px 0 rgba(255,255,255,0.3),
+    4px 4px 0 #000;
+}
+
+.mc-btn:hover {
+  background: var(--mc-btn-hover);
+  transform: translateY(-2px);
+  box-shadow:
+    inset -4px -4px 0 var(--mc-btn-border),
+    inset 4px 4px 0 rgba(255,255,255,0.4),
+    6px 6px 0 #000;
+}
+
+.mc-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset -2px -2px 0 var(--mc-btn-border),
+    inset 2px 2px 0 rgba(255,255,255,0.2),
+    2px 2px 0 #000;
+}
+
+.mc-btn.danger {
+  background: #8B0000;
+  box-shadow: inset -4px -4px 0 #500000, inset 4px 4px 0 rgba(255,100,100,0.3), 4px 4px 0 #000;
+}
+
+.mc-btn.danger:hover {
+  background: #b00000;
+}
+
+/* ===== 难度选择面板 ===== */
+.difficulty-panel {
+  background: rgba(0,0,0,0.7);
+  border: 4px solid #555;
+  padding: 24px;
+  margin-top: 16px;
+  box-shadow: 4px 4px 0 #000;
+  min-width: 300px;
+}
+
+.difficulty-panel h3 {
+  font-size: 10px;
+  text-align: center;
+  margin-bottom: 16px;
+  color: #FFD700;
+}
+
+.difficulty-options {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.diff-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  border: none;
+  box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4), inset 2px 2px 0 rgba(255,255,255,0.3), 2px 2px 0 #000;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+  transition: transform 0.1s;
+}
+
+.diff-btn:hover { transform: scale(1.05); }
+.diff-btn.active { outline: 3px solid #FFD700; }
+
+.diff-btn.easy { background: #3a8a2a; }
+.diff-btn.medium { background: #8a6a00; }
+.diff-btn.hard { background: #8a2a00; }
+.diff-btn.extreme { background: #5a005a; }
+
+/* ===== 游戏屏幕 ===== */
+#game-screen {
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 顶部HUD */
+.game-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.75);
+  padding: 8px 16px;
+  border-bottom: 3px solid #333;
+  z-index: 100;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hud-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(6px, 1.2vw, 10px);
+}
+
+.hud-label {
+  color: #aaa;
+}
+
+.hud-value {
+  color: #FFD700;
+  font-size: clamp(8px, 1.5vw, 13px);
+}
+
+.hp-bar {
+  display: flex;
+  gap: 3px;
+}
+
+.hp-heart {
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  line-height: 16px;
+  filter: drop-shadow(1px 1px 0 #000);
+}
+
+.hp-heart.empty {
+  filter: grayscale(1) opacity(0.4) drop-shadow(1px 1px 0 #000);
+}
+
+/* 主游戏区域 */
+.game-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 游戏画布 */
+#game-canvas {
+  flex: 1;
+  background: linear-gradient(180deg, #6DB6FF 0%, #87CEEB 60%, #6AAA40 75%, #8B5E3C 85%, #5C3A1A 100%);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* 侧边面板 */
+.side-panel {
+  width: clamp(180px, 22vw, 260px);
+  background: rgba(0,0,0,0.8);
+  border-left: 3px solid #333;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.panel-section {
+  background: rgba(255,255,255,0.05);
+  border: 2px solid #555;
+  padding: 10px;
+}
+
+.panel-title {
+  font-size: 7px;
+  color: #FFD700;
+  text-align: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #555;
+  letter-spacing: 1px;
+}
+
+/* 单词显示区域 */
+.word-display {
+  text-align: center;
+}
+
+.word-target {
+  font-size: clamp(14px, 2.5vw, 22px);
+  color: #FFD700;
+  text-shadow: 2px 2px 0 #7B4000;
+  letter-spacing: 4px;
+  margin-bottom: 6px;
+  min-height: 30px;
+}
+
+.word-translation {
+  font-size: 8px;
+  color: #90EE90;
+  margin-bottom: 8px;
+}
+
+.word-hint {
+  font-size: 7px;
+  color: #aaa;
+  font-style: italic;
+}
+
+/* 玩家输入显示 */
+.input-display {
+  text-align: center;
+}
+
+.input-slots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-height: 36px;
+  align-items: center;
+}
+
+.input-slot {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #666;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #FFD700;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.5), 1px 1px 0 #000;
+}
+
+.input-slot.filled {
+  background: rgba(90, 140, 0, 0.6);
+  border-color: #5a8a00;
+  animation: slotFill 0.2s ease-out;
+}
+
+.input-slot.correct {
+  background: rgba(0, 200, 0, 0.4);
+  border-color: #00cc00;
+}
+
+.input-slot.wrong {
+  background: rgba(200, 0, 0, 0.4);
+  border-color: #cc0000;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes slotFill {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* 统计 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 16px;
+  color: #FFD700;
+}
+
+.stat-lbl {
+  font-size: 6px;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+/* ===== 游戏画布内的元素 ===== */
+
+/* 掉落的字母方块 */
+.falling-block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s;
+  image-rendering: pixelated;
+}
+
+.falling-block:hover {
+  transform: scale(1.1);
+  z-index: 50;
+}
+
+.block-face {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+/* 方块类型颜色 */
+.block-type-wood {
+  background: #B8862A;
+  box-shadow: inset -4px -4px 0 #7B5A1A, inset 4px 4px 0 #D4A84B, 3px 3px 0 #000;
+  border: 2px solid #7B5A1A;
+}
+
+.block-type-stone {
+  background: #8D8D8D;
+  box-shadow: inset -4px -4px 0 #555, inset 4px 4px 0 #bbb, 3px 3px 0 #000;
+  border: 2px solid #555;
+}
+
+.block-type-coal {
+  background: #3a3a3a;
+  box-shadow: inset -4px -4px 0 #1a1a1a, inset 4px 4px 0 #666, 3px 3px 0 #000;
+  border: 2px solid #1a1a1a;
+}
+
+.block-type-iron {
+  background: #a0917e;
+  box-shadow: inset -4px -4px 0 #7a6e60, inset 4px 4px 0 #c8bdb4, 3px 3px 0 #000;
+  border: 2px solid #7a6e60;
+}
+
+.block-type-gold {
+  background: #E6C700;
+  box-shadow: inset -4px -4px 0 #a08800, inset 4px 4px 0 #fff07a, 3px 3px 0 #000;
+  border: 2px solid #a08800;
+}
+
+.block-type-diamond {
+  background: #4CE3E3;
+  box-shadow: inset -4px -4px 0 #2a9090, inset 4px 4px 0 #9efafa, 3px 3px 0 #000;
+  border: 2px solid #2a9090;
+}
+
+.block-type-emerald {
+  background: #22c55e;
+  box-shadow: inset -4px -4px 0 #14532d, inset 4px 4px 0 #86efac, 3px 3px 0 #000;
+  border: 2px solid #14532d;
+}
+
+.block-letter {
+  font-size: clamp(12px, 2vw, 20px);
+  color: #fff;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.8);
+  font-family: 'Press Start 2P', monospace;
+  pointer-events: none;
+}
+
+/* 地面 */
+.ground-strip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: repeating-linear-gradient(
+    90deg,
+    #8B5E3C 0px,
+    #8B5E3C 63px,
+    #7A5232 64px,
+    #7A5232 64px
+  );
+  border-top: 4px solid var(--mc-grass-top);
+}
+
+/* 玩家角色 */
+.player-char {
+  position: absolute;
+  bottom: 80px;
+  width: 48px;
+  height: 64px;
+  z-index: 20;
+  transition: left 0.1s ease-out;
+  image-rendering: pixelated;
+}
+
+.player-head {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+  background: #F5CBA7;
+  border: 3px solid #8B6914;
+  position: relative;
+  box-shadow: 3px 3px 0 #000;
+}
+
+.player-body {
+  width: 28px;
+  height: 24px;
+  margin: 0 auto;
+  background: #4169E1;
+  border: 2px solid #1a3a90;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.player-legs {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+
+.player-leg {
+  width: 12px;
+  height: 20px;
+  background: #2244AA;
+  border: 2px solid #0a1a50;
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* 收集动画 */
+.collect-effect {
+  position: absolute;
+  pointer-events: none;
+  z-index: 60;
+  animation: collectAnim 0.6s ease-out forwards;
+  font-size: 18px;
+  color: #FFD700;
+  text-shadow: 2px 2px 0 #000;
+  font-family: 'Press Start 2P', monospace;
+}
+
+@keyframes collectAnim {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  50% { opacity: 1; transform: scale(1.5) translateY(-20px); }
+  100% { opacity: 0; transform: scale(0.5) translateY(-40px); }
+}
+
+/* 错误动画 */
+.miss-effect {
+  position: absolute;
+  pointer-events: none;
+  z-index: 60;
+  animation: missAnim 0.8s ease-out forwards;
+  font-size: 14px;
+  color: #ff4444;
+  text-shadow: 2px 2px 0 #000;
+  font-family: 'Press Start 2P', monospace;
+}
+
+@keyframes missAnim {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-60px); }
+}
+
+/* 树装饰 */
+.deco-tree {
+  position: absolute;
+  pointer-events: none;
+  bottom: 80px;
+}
+
+.tree-trunk {
+  width: 16px;
+  height: 32px;
+  background: #B8862A;
+  margin: 0 auto;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.tree-leaves {
+  width: 48px;
+  height: 40px;
+  background: var(--mc-leaves);
+  margin-left: -16px;
+  margin-bottom: -4px;
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* 云朵 */
+.game-cloud {
+  position: absolute;
+  background: white;
+  opacity: 0.85;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+  pointer-events: none;
+  animation: cloudFloat linear infinite;
+}
+
+@keyframes cloudFloat {
+  from { transform: translateX(0); }
+  to { transform: translateX(-120vw); }
+}
+
+/* ===== 暂停覆盖层 ===== */
+#pause-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+#pause-overlay.visible {
+  display: flex;
+}
+
+.pause-box {
+  background: #2a2a2a;
+  border: 4px solid #555;
+  padding: 32px 48px;
+  text-align: center;
+  box-shadow: 8px 8px 0 #000;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.pause-box h2 {
+  font-size: 18px;
+  color: #FFD700;
+  text-shadow: 3px 3px 0 #000;
+}
+
+/* ===== 结果屏幕 ===== */
+#result-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  gap: 20px;
+  text-align: center;
+}
+
+.result-box {
+  background: rgba(0,0,0,0.6);
+  border: 4px solid #555;
+  padding: 32px 48px;
+  box-shadow: 8px 8px 0 #000;
+  min-width: 320px;
+}
+
+.result-title {
+  font-size: clamp(16px, 3vw, 28px);
+  margin-bottom: 8px;
+}
+
+.result-title.win { color: #FFD700; text-shadow: 3px 3px 0 #7B4000; }
+.result-title.lose { color: #ff4444; text-shadow: 3px 3px 0 #660000; }
+
+.result-stats {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.result-stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: clamp(7px, 1.2vw, 10px);
+  padding: 6px 0;
+  border-bottom: 1px solid #333;
+}
+
+.result-stat-label { color: #aaa; }
+.result-stat-value { color: #FFD700; }
+
+.result-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ===== 错误词汇列表 ===== */
+.missed-words {
+  max-height: 120px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.missed-word-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: rgba(255,50,50,0.1);
+  border: 1px solid #550000;
+  margin-bottom: 4px;
+  font-size: 7px;
+}
+
+.missed-word-en { color: #ff8888; }
+.missed-word-cn { color: #aaa; }
+
+/* ===== 进度条 ===== */
+.level-progress {
+  background: #333;
+  height: 8px;
+  border: 2px solid #555;
+  overflow: hidden;
+  box-shadow: inset 2px 2px 0 #000;
+}
+
+.level-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3a8a00, #7ae000);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(100, 255, 0, 0.5);
+}
+
+/* ===== 关卡提示 ===== */
+.level-banner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: rgba(0,0,0,0.85);
+  border: 4px solid #FFD700;
+  padding: 24px 48px;
+  z-index: 300;
+  text-align: center;
+  box-shadow: 8px 8px 0 #000;
+  transition: transform 0.3s ease;
+}
+
+.level-banner.show {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.level-banner-text {
+  font-size: clamp(12px, 2.5vw, 20px);
+  color: #FFD700;
+  text-shadow: 2px 2px 0 #000;
+}
+
+/* ===== 通知吐司 ===== */
+.game-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(0,0,0,0.8);
+  border: 3px solid #555;
+  padding: 10px 20px;
+  font-size: 9px;
+  color: #FFD700;
+  z-index: 400;
+  opacity: 0;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.game-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ===== 连击显示 ===== */
+.combo-display {
+  position: fixed;
+  top: 120px;
+  right: 20px;
+  text-align: right;
+  z-index: 150;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.combo-display.show {
+  opacity: 1;
+}
+
+.combo-num {
+  font-size: clamp(18px, 3vw, 32px);
+  color: #FFD700;
+  text-shadow: 3px 3px 0 #000;
+}
+
+.combo-label {
+  font-size: 8px;
+  color: #ff8c00;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+  .side-panel {
+    width: 160px;
+  }
+
+  .game-hud {
+    font-size: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .side-panel {
+    display: none;
+  }
+
+  #game-screen .game-main {
+    flex-direction: column-reverse;
+  }
+}
+
+/* ===== 帮助提示 ===== */
+.help-tip {
+  font-size: 7px;
+  color: #888;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* ===== 滚动条 ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1a1a1a; }
+::-webkit-scrollbar-thumb { background: #555; }
+::-webkit-scrollbar-thumb:hover { background: #777; }
