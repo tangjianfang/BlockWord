@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>BlockWord - 我的世界英语冒险</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>" />
+</head>
+<body>
+
+<!-- ======================================================
+     开始屏幕
+     ====================================================== -->
+<div id="start-screen" class="screen active">
+  <!-- 像素云朵背景 -->
+  <div class="start-bg-clouds" id="start-clouds"></div>
+
+  <!-- 游戏标题 -->
+  <div class="start-logo">
+    <h1>BlockWord</h1>
+    <p class="subtitle">⛏ 挖掘单词 · 征服世界 ⚔</p>
+  </div>
+
+  <!-- 菜单按钮 -->
+  <div class="start-menu">
+    <button class="mc-btn" id="btn-start">▶ 开始游戏</button>
+
+    <!-- 难度选择 -->
+    <div class="difficulty-panel">
+      <h3>⚙ 选择难度</h3>
+      <div class="difficulty-options">
+        <button class="diff-btn easy active" data-diff="easy">🌱 简单</button>
+        <button class="diff-btn medium" data-diff="medium">⚔ 普通</button>
+        <button class="diff-btn hard" data-diff="hard">💀 困难</button>
+        <button class="diff-btn extreme" data-diff="extreme">🔥 极难</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 玩法说明 -->
+  <div style="position:absolute;bottom:20px;font-size:7px;color:rgba(255,255,255,0.6);text-align:center;line-height:2em;">
+    点击正确的字母方块 · 拼出目标单词 · 避免字母落地<br/>
+    鼠标移动控制角色 · ESC 暂停游戏
+  </div>
+</div>
+
+<!-- ======================================================
+     游戏屏幕
+     ====================================================== -->
+<div id="game-screen" class="screen">
+
+  <!-- 顶部 HUD -->
+  <div class="game-hud">
+    <div class="hud-item">
+      <span class="hud-label">关卡</span>
+      <span class="hud-value" id="hud-level">1</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">分数</span>
+      <span class="hud-value" id="hud-score">0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">连击</span>
+      <span class="hud-value" id="hud-combo">0x</span>
+    </div>
+    <div class="hud-item" id="hp-container">
+      <span class="hud-label">生命</span>
+      <div class="hp-bar" id="hp-bar">
+        <!-- 心心图标由JS动态生成 -->
+      </div>
+    </div>
+    <button class="mc-btn" id="btn-pause" style="min-width:unset;padding:6px 14px;font-size:9px;">⏸ 暂停</button>
+  </div>
+
+  <!-- 主游戏区域 -->
+  <div class="game-main">
+
+    <!-- 游戏画布 -->
+    <div id="game-canvas">
+      <!-- 方块容器 -->
+      <div id="blocks-container"></div>
+
+      <!-- 装饰树（固定） -->
+      <div class="deco-tree" style="left:8%">
+        <div class="tree-leaves"></div>
+        <div class="tree-trunk"></div>
+      </div>
+      <div class="deco-tree" style="left:75%">
+        <div class="tree-leaves" style="background:#2d5a18"></div>
+        <div class="tree-trunk" style="background:#9a6820"></div>
+      </div>
+      <div class="deco-tree" style="left:45%">
+        <div class="tree-leaves" style="width:36px;height:32px"></div>
+        <div class="tree-trunk" style="height:24px"></div>
+      </div>
+
+      <!-- 地面 -->
+      <div class="ground-strip"></div>
+
+      <!-- 玩家角色 -->
+      <div class="player-char" id="player-char">
+        <div class="player-head" id="player-head">
+          <!-- 眼睛 -->
+          <div style="position:absolute;display:flex;gap:6px;top:8px;left:4px;">
+            <div style="width:6px;height:6px;background:#000;"></div>
+            <div style="width:6px;height:6px;background:#000;"></div>
+          </div>
+        </div>
+        <div class="player-body"></div>
+        <div class="player-legs">
+          <div class="player-leg"></div>
+          <div class="player-leg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 侧边信息面板 -->
+    <div class="side-panel">
+
+      <!-- 当前目标单词 -->
+      <div class="panel-section">
+        <div class="panel-title">🎯 目标单词</div>
+        <div class="word-display">
+          <div class="word-target" id="word-target">_ _ _ _</div>
+          <div class="word-translation" id="word-translation">加载中...</div>
+          <div class="word-hint" id="word-hint"></div>
+        </div>
+      </div>
+
+      <!-- 已收集字母 -->
+      <div class="panel-section">
+        <div class="panel-title">📦 已收集</div>
+        <div class="input-display">
+          <div class="input-slots" id="input-slots">
+            <!-- 动态生成 -->
+          </div>
+          <div class="help-tip">按顺序点击字母方块</div>
+        </div>
+      </div>
+
+      <!-- 关卡进度 -->
+      <div class="panel-section">
+        <div class="panel-title">📊 关卡进度</div>
+        <div class="level-progress">
+          <div class="level-progress-fill" id="level-progress-fill" style="width:0%"></div>
+        </div>
+        <div style="text-align:center;margin-top:6px;font-size:7px;color:#aaa;">
+          <span id="words-completed">0</span> / <span id="words-total">5</span> 个单词
+        </div>
+      </div>
+
+      <!-- 统计 -->
+      <div class="panel-section">
+        <div class="panel-title">📈 本局统计</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-num" id="stats-correct">0</div>
+            <div class="stat-lbl">正确</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="stats-wrong">0</div>
+            <div class="stat-lbl">错误</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="stats-combo">0</div>
+            <div class="stat-lbl">最高连击</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="stats-score">0</div>
+            <div class="stat-lbl">总分</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /side-panel -->
+  </div><!-- /game-main -->
+</div><!-- /game-screen -->
+
+<!-- ======================================================
+     暂停覆盖层
+     ====================================================== -->
+<div id="pause-overlay">
+  <div class="pause-box">
+    <h2>⏸ 游戏暂停</h2>
+    <button class="mc-btn" id="btn-resume">▶ 继续游戏</button>
+    <button class="mc-btn danger" id="btn-menu">🏠 返回主菜单</button>
+  </div>
+</div>
+
+<!-- ======================================================
+     结果屏幕
+     ====================================================== -->
+<div id="result-screen" class="screen">
+  <div class="result-box">
+    <div class="result-title win" id="result-title">🏆 胜利！</div>
+
+    <div class="result-stats">
+      <div class="result-stat-row">
+        <span class="result-stat-label">最终得分</span>
+        <span class="result-stat-value" id="result-score">0</span>
+      </div>
+      <div class="result-stat-row">
+        <span class="result-stat-label">正确字母</span>
+        <span class="result-stat-value" id="result-correct">0</span>
+      </div>
+      <div class="result-stat-row">
+        <span class="result-stat-label">错误字母</span>
+        <span class="result-stat-value" id="result-wrong">0</span>
+      </div>
+      <div class="result-stat-row">
+        <span class="result-stat-label">最高连击</span>
+        <span class="result-stat-value" id="result-combo">0</span>
+      </div>
+    </div>
+
+    <!-- 错误单词列表 -->
+    <div id="missed-words-section" style="display:none;">
+      <div class="panel-title" style="margin-bottom:8px;">❌ 未答出的单词</div>
+      <div class="missed-words" id="missed-list"></div>
+    </div>
+
+    <div class="result-actions">
+      <button class="mc-btn" id="btn-result-restart">🔄 再来一局</button>
+      <button class="mc-btn danger" id="btn-result-menu">🏠 主菜单</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     关卡横幅（覆盖层）
+     ====================================================== -->
+<div class="level-banner" id="level-banner">
+  <div class="level-banner-text" id="level-banner-text">第 1 关</div>
+</div>
+
+<!-- ======================================================
+     通知吐司
+     ====================================================== -->
+<div class="game-toast" id="game-toast"></div>
+
+<!-- ======================================================
+     连击显示
+     ====================================================== -->
+<div class="combo-display" id="combo-display">
+  <div class="combo-num" id="combo-num">0</div>
+  <div class="combo-label">COMBO!</div>
+</div>
+
+<!-- ======================================================
+     脚本
+     ====================================================== -->
+<script src="words.js"></script>
+<script src="game.js"></script>
+
+</body>
+</html>
