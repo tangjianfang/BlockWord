@@ -26,6 +26,9 @@
   <div class="start-menu">
     <button class="mc-btn" id="btn-start">▶ 开始游戏</button>
 
+    <!-- 最高分 -->
+    <div class="start-best-score">🏆 最高分: <span id="start-best">0</span></div>
+
     <!-- 难度选择 -->
     <div class="difficulty-panel">
       <h3>⚙ 选择难度</h3>
@@ -36,6 +39,9 @@
         <button class="diff-btn extreme" data-diff="extreme">🔥 极难</button>
       </div>
     </div>
+
+    <!-- 音效开关 -->
+    <button class="mc-btn sound-toggle" id="btn-sound">🔊 音效: 开</button>
   </div>
 
   <!-- 玩法说明 -->
@@ -195,10 +201,16 @@
   <div class="result-box">
     <div class="result-title win" id="result-title">🏆 胜利！</div>
 
+    <div class="result-new-record" id="result-new-record" style="display:none;">🎉 新纪录！</div>
+
     <div class="result-stats">
       <div class="result-stat-row">
         <span class="result-stat-label">最终得分</span>
         <span class="result-stat-value" id="result-score">0</span>
+      </div>
+      <div class="result-stat-row">
+        <span class="result-stat-label">历史最高</span>
+        <span class="result-stat-value" id="result-best">0</span>
       </div>
       <div class="result-stat-row">
         <span class="result-stat-label">正确字母</span>

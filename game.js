@@ -67,6 +67,100 @@ let game = {
   cloudTimer: null,
 };
 
+/* ===================== 音效系统 (Web Audio) ===================== */
+const sound = {
+  ctx: null,
+  enabled: true,
+
+  init() {
+    // 读取静音偏好
+    try {
+      const saved = localStorage.getItem('blockword.soundEnabled');
+      if (saved !== null) this.enabled = saved === 'true';
+    } catch (e) { /* localStorage 不可用时忽略 */ }
+  },
+
+  // 懒加载 AudioContext（需用户交互后才能创建/恢复）
+  ensureCtx() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    return this.ctx;
+  },
+
+  // 播放一个简单的方波音符
+  tone(freq, duration = 0.12, type = 'square', gain = 0.15) {
+    if (!this.enabled) return;
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(gain, ctx.currentTime + 0.01);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    osc.connect(env);
+    env.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  },
+
+  // 播放一组音符（旋律）
+  sequence(notes) {
+    if (!this.enabled) return;
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    let t = 0;
+    notes.forEach(n => {
+      setTimeout(() => this.tone(n.freq, n.dur || 0.12, n.type || 'square', n.gain || 0.15), t * 1000);
+      t += n.dur || 0.12;
+    });
+  },
+
+  correct() { this.tone(660, 0.1, 'square', 0.16); },
+  wrong() { this.tone(160, 0.22, 'sawtooth', 0.18); },
+  complete() { this.sequence([{ freq: 523 }, { freq: 659 }, { freq: 784, dur: 0.18 }]); },
+  levelUp() { this.sequence([{ freq: 523 }, { freq: 659 }, { freq: 784 }, { freq: 1047, dur: 0.22 }]); },
+  win() { this.sequence([{ freq: 523 }, { freq: 659 }, { freq: 784 }, { freq: 1047 }, { freq: 1319, dur: 0.3 }]); },
+  lose() { this.sequence([{ freq: 392, dur: 0.18 }, { freq: 311, dur: 0.18 }, { freq: 233, dur: 0.32 }]); },
+
+  toggle() {
+    this.enabled = !this.enabled;
+    try {
+      localStorage.setItem('blockword.soundEnabled', String(this.enabled));
+    } catch (e) { /* localStorage 不可用时忽略 */ }
+    if (this.enabled) this.tone(660, 0.1, 'square', 0.16);
+    return this.enabled;
+  },
+};
+
+/* ===================== 最高分（localStorage） ===================== */
+const HIGH_SCORE_KEY = 'blockword.highScore';
+
+function getHighScore() {
+  try {
+    const v = parseInt(localStorage.getItem(HIGH_SCORE_KEY), 10);
+    return Number.isFinite(v) ? v : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function saveHighScore(score) {
+  try {
+    if (score > getHighScore()) {
+      localStorage.setItem(HIGH_SCORE_KEY, String(score));
+      return true;
+    }
+  } catch (e) { /* localStorage 不可用时忽略 */ }
+  return false;
+}
+
 /* ===================== DOM 引用 ===================== */
 let dom = {};
 
@@ -115,10 +209,15 @@ function initDom() {
     resultCorrect: document.getElementById('result-correct'),
     resultWrong: document.getElementById('result-wrong'),
     resultCombo: document.getElementById('result-combo'),
-    resultMissed: document.getElementById('result-missed'),
+    resultBest: document.getElementById('result-best'),
+    resultNewRecord: document.getElementById('result-new-record'),
     missedList: document.getElementById('missed-list'),
 
     missedWordsSection: document.getElementById('missed-words-section'),
+
+    // 开始屏幕 / 设置
+    startBest: document.getElementById('start-best'),
+    btnSound: document.getElementById('btn-sound'),
   };
 }
 
@@ -377,6 +476,7 @@ function onBlockClick(id) {
 
     showCollectEffect(block.x + block.size / 2, block.y, '+' + getLetterScore());
     game.score += getLetterScore();
+    sound.correct();
 
     // 移动玩家到方块位置
     targetPlayerX = block.x;
@@ -396,6 +496,7 @@ function onBlockClick(id) {
     // 错误！
     game.wrongCount++;
     game.combo = 0;
+    sound.wrong();
     loseHp(1);
     flashBlock(block, 'wrong');
     showToast(`错了！需要的是 "${word[nextIdx]}"`, 'danger');
@@ -431,6 +532,7 @@ function completeWord() {
   clearBlocksByLetter(word.word.toUpperCase().split(''));
 
   showToast(`✓ "${word.word}" = ${word.translation}  +${wordBonus}分`, 'success');
+  sound.complete();
   updateHUD();
   updateLevelProgress();
 
@@ -458,6 +560,7 @@ function levelUp() {
 
   game.level++;
   showLevelBanner(`第 ${game.level} 关`);
+  sound.levelUp();
 
   // 每隔几关加快速度
   if (game.spawnTimer) clearInterval(game.spawnTimer);
@@ -491,9 +594,23 @@ function loseHp(amount) {
   }
 }
 
+/* ===================== 记录未答出的单词 ===================== */
+function recordMissedWord(word) {
+  if (!word) return;
+  // 避免重复记录同一个单词
+  if (game.wordsMissed.some(w => w.word === word.word)) return;
+  game.wordsMissed.push({ word: word.word, translation: word.translation });
+}
+
 /* ===================== 游戏结束 ===================== */
 function endGame(win) {
   game.state = GameState.RESULT;
+
+  // 游戏失败时，当前未完成的单词计入"未答出"列表
+  if (!win && game.currentWord &&
+      game.collectedLetters.filter(Boolean).length < game.currentWord.word.length) {
+    recordMissedWord(game.currentWord);
+  }
 
   if (game.spawnTimer) clearInterval(game.spawnTimer);
   if (game.animFrame) cancelAnimationFrame(game.animFrame);
@@ -515,6 +632,16 @@ function showResultScreen(win) {
   dom.resultCorrect.textContent = game.correctCount;
   dom.resultWrong.textContent = game.wrongCount;
   dom.resultCombo.textContent = game.maxCombo;
+
+  // 最高分处理
+  const isNewRecord = saveHighScore(game.score);
+  if (dom.resultBest) dom.resultBest.textContent = getHighScore();
+  if (dom.resultNewRecord) {
+    dom.resultNewRecord.style.display = isNewRecord && game.score > 0 ? 'block' : 'none';
+  }
+
+  // 结束音效
+  if (win) sound.win(); else sound.lose();
 
   // 错误单词列表
   if (game.wordsMissed.length > 0) {
@@ -713,18 +840,48 @@ function setupInput() {
 }
 
 /* ===================== 初始化 ===================== */
+function updateSoundButton() {
+  if (dom.btnSound) {
+    dom.btnSound.textContent = sound.enabled ? '🔊 音效: 开' : '🔇 音效: 关';
+    dom.btnSound.classList.toggle('muted', !sound.enabled);
+  }
+}
+
+function updateHighScoreDisplays() {
+  const best = getHighScore();
+  if (dom.startBest) dom.startBest.textContent = best;
+}
+
+function goToMenu() {
+  game.state = GameState.IDLE;
+  if (game.spawnTimer) clearInterval(game.spawnTimer);
+  if (game.animFrame) cancelAnimationFrame(game.animFrame);
+  if (game.cloudTimer) clearInterval(game.cloudTimer);
+  game.blocks.forEach(b => b.element && b.element.remove());
+  game.blocks = [];
+  if (dom.pauseOverlay) dom.pauseOverlay.classList.remove('visible');
+  updateHighScoreDisplays();
+  showScreen('start-screen');
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initDom();
+  sound.init();
   setupInput();
 
   // 绑定按钮
   document.getElementById('btn-start')?.addEventListener('click', startGame);
   document.getElementById('btn-resume')?.addEventListener('click', resumeGame);
-  document.getElementById('btn-restart')?.addEventListener('click', startGame);
-  document.getElementById('btn-menu')?.addEventListener('click', () => showScreen('start-screen'));
+  document.getElementById('btn-menu')?.addEventListener('click', goToMenu);
   document.getElementById('btn-pause')?.addEventListener('click', pauseGame);
   document.getElementById('btn-result-restart')?.addEventListener('click', startGame);
-  document.getElementById('btn-result-menu')?.addEventListener('click', () => showScreen('start-screen'));
+  document.getElementById('btn-result-menu')?.addEventListener('click', goToMenu);
+
+  // 音效开关
+  dom.btnSound?.addEventListener('click', () => {
+    sound.toggle();
+    updateSoundButton();
+  });
 
   // 难度按钮
   document.querySelectorAll('.diff-btn').forEach(btn => {
@@ -734,6 +891,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // 初始化
   showScreen('start-screen');
   setDifficulty('easy');
+  updateSoundButton();
+  updateHighScoreDisplays();
 
   // 开始屏幕的像素云朵
   createStartClouds();

@@ -113,6 +113,35 @@ body {
   z-index: 10;
 }
 
+/* 开始屏幕最高分 */
+.start-best-score {
+  text-align: center;
+  font-size: 9px;
+  color: #FFD700;
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 1px;
+}
+
+/* 音效开关按钮 */
+.mc-btn.sound-toggle {
+  font-size: 9px;
+  padding: 8px 20px;
+  min-width: 160px;
+  align-self: center;
+}
+
+.mc-btn.sound-toggle.muted {
+  background: #555;
+  box-shadow:
+    inset -4px -4px 0 #333,
+    inset 4px 4px 0 rgba(255,255,255,0.2),
+    4px 4px 0 #000;
+}
+
+.mc-btn.sound-toggle.muted:hover {
+  background: #666;
+}
+
 /* ===== 像素风格按钮 ===== */
 .mc-btn {
   font-family: 'Press Start 2P', monospace;
@@ -682,6 +711,20 @@ body {
 
 .result-title.win { color: #FFD700; text-shadow: 3px 3px 0 #7B4000; }
 .result-title.lose { color: #ff4444; text-shadow: 3px 3px 0 #660000; }
+
+/* 新纪录提示 */
+.result-new-record {
+  font-size: clamp(10px, 1.8vw, 14px);
+  color: #90EE90;
+  text-shadow: 2px 2px 0 #1a4a1a;
+  margin-bottom: 8px;
+  animation: recordPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes recordPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.85; }
+}
 
 .result-stats {
   margin: 20px 0;
