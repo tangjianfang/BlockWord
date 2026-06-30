@@ -87,6 +87,33 @@
       <!-- 方块容器 -->
       <div id="blocks-container"></div>
 
+      <!-- 敌人区域 -->
+      <div id="enemy-container">
+        <!-- 对话气泡 -->
+        <div id="enemy-dialogue" class="enemy-dialogue"></div>
+        <!-- 敌人HP条 -->
+        <div id="enemy-hp-wrap" class="enemy-hp-wrap">
+          <div id="enemy-hp-fill" class="enemy-hp-fill"></div>
+        </div>
+        <!-- 敌人精灵 -->
+        <div id="enemy-sprite" class="enemy-sprite">
+          <div class="mob-head"><div class="mob-eyes"><div class="mob-eye"></div><div class="mob-eye"></div></div></div>
+          <div class="mob-arms"><div class="mob-arm mob-arm-l"></div><div class="mob-arm mob-arm-r"></div></div>
+          <div class="mob-torso"></div>
+          <div class="mob-legs"><div class="mob-leg"></div><div class="mob-leg"></div></div>
+        </div>
+        <!-- 敌人名称 -->
+        <div id="enemy-name" class="enemy-name"></div>
+      </div>
+
+      <!-- 单词完成胜利浮层 -->
+      <div id="word-victory" class="word-victory hidden">
+        <div class="wv-icon" id="wv-icon">⚔</div>
+        <div class="wv-word" id="wv-word"></div>
+        <div class="wv-sentence" id="wv-sentence"></div>
+        <div class="wv-score" id="wv-score"></div>
+      </div>
+
       <!-- 装饰树（固定） -->
       <div class="deco-tree" style="left:8%">
         <div class="tree-leaves"></div>
@@ -130,6 +157,7 @@
         <div class="word-display">
           <div class="word-target" id="word-target">_ _ _ _</div>
           <div class="word-translation" id="word-translation">加载中...</div>
+          <div class="word-sentence-panel" id="word-sentence-panel"></div>
           <div class="word-hint" id="word-hint"></div>
         </div>
       </div>
