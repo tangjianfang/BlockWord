@@ -26,6 +26,10 @@ const BLOCK_TYPES = ['wood', 'stone', 'coal', 'iron', 'gold', 'diamond', 'emeral
 const WORDS_PER_LEVEL = 5; // 每关需要完成的单词数
 const TOTAL_LEVELS = 10;
 
+const ENEMY_SPAWN_OFFSET  = 20;  // 敌人从右侧屏幕外多少像素出现
+const ENEMY_RESPAWN_MARGIN = 40; // 敌人被弹回时距右侧屏幕边缘的像素
+const ENEMY_CANVAS_FALLBACK = 600; // 无法获取画布宽度时的默认值
+
 /* ===================== 游戏对象 ===================== */
 let game = {
   state: GameState.IDLE,
@@ -284,7 +288,7 @@ function startGame() {
   game.enemyWalking = false;
 
   showScreen('game-screen');
-  applyBiome(getBiome(1));
+  applyBiome(getBiome(game.level));
   updateHUD();
   setupClouds();
   loadNewWord();
@@ -1058,7 +1062,7 @@ function spawnEnemy(word) {
 
   // 从屏幕右侧出现
   const canvas = dom.canvas;
-  game.enemyX = (canvas ? canvas.offsetWidth : 600) + 20;
+  game.enemyX = (canvas ? canvas.offsetWidth : ENEMY_CANVAS_FALLBACK) + ENEMY_SPAWN_OFFSET;
   dom.enemyContainer.style.left = game.enemyX + 'px';
 
   // 名字标签
@@ -1092,7 +1096,7 @@ function updateEnemyHpBar() {
 function updateEnemy(dt) {
   if (!game.enemyWalking || !dom.enemyContainer) return;
   const diff = DIFFICULTIES[game.difficulty];
-  game.enemyX -= (diff.enemySpeed || 40) * dt;
+  game.enemyX -= diff.enemySpeed * dt;
   dom.enemyContainer.style.left = game.enemyX + 'px';
 
   // 到达玩家位置
@@ -1109,7 +1113,7 @@ function enemyReachesPlayer() {
 
   // 弹回屏幕右侧重新走过来
   const canvas = dom.canvas;
-  game.enemyX = (canvas ? canvas.offsetWidth : 600) - 40;
+  game.enemyX = (canvas ? canvas.offsetWidth : ENEMY_CANVAS_FALLBACK) - ENEMY_RESPAWN_MARGIN;
   if (dom.enemyContainer) dom.enemyContainer.style.left = game.enemyX + 'px';
 
   showEnemyDialogue('嗯哼！我还会回来的！');
