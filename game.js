@@ -15,10 +15,10 @@ const GameState = {
 };
 
 const DIFFICULTIES = {
-  easy: { name: '简单', speed: 1.0, blockSize: 56, spawnRate: 2200, maxBlocks: 6, hp: 10 },
-  medium: { name: '普通', speed: 1.5, blockSize: 48, spawnRate: 1800, maxBlocks: 8, hp: 8 },
-  hard: { name: '困难', speed: 2.2, blockSize: 44, spawnRate: 1400, maxBlocks: 10, hp: 6 },
-  extreme: { name: '极难', speed: 3.0, blockSize: 40, spawnRate: 1000, maxBlocks: 12, hp: 4 },
+  easy:    { name: '简单', speed: 1.0, blockSize: 56, spawnRate: 2200, maxBlocks: 6,  hp: 10, enemySpeed: 28 },
+  medium:  { name: '普通', speed: 1.5, blockSize: 48, spawnRate: 1800, maxBlocks: 8,  hp: 8,  enemySpeed: 42 },
+  hard:    { name: '困难', speed: 2.2, blockSize: 44, spawnRate: 1400, maxBlocks: 10, hp: 6,  enemySpeed: 60 },
+  extreme: { name: '极难', speed: 3.0, blockSize: 40, spawnRate: 1000, maxBlocks: 12, hp: 4,  enemySpeed: 82 },
 };
 
 const BLOCK_TYPES = ['wood', 'stone', 'coal', 'iron', 'gold', 'diamond', 'emerald'];
@@ -53,6 +53,16 @@ let game = {
 
   // 玩家
   playerX: 0,
+
+  // 敌人
+  enemyX: 0,
+  enemyHp: 0,
+  enemyMaxHp: 0,
+  enemyMob: 'zombie',
+  enemyWalking: false,
+
+  // 生物群系
+  biome: 'plains',
 
   // 定时器
   spawnTimer: null,
@@ -183,6 +193,7 @@ function initDom() {
 
     wordTarget: document.getElementById('word-target'),
     wordTranslation: document.getElementById('word-translation'),
+    wordSentencePanel: document.getElementById('word-sentence-panel'),
     wordHint: document.getElementById('word-hint'),
     inputSlots: document.getElementById('input-slots'),
 
@@ -202,6 +213,20 @@ function initDom() {
 
     comboDisplay: document.getElementById('combo-display'),
     comboNum: document.getElementById('combo-num'),
+
+    // 敌人系统
+    enemyContainer: document.getElementById('enemy-container'),
+    enemySprite: document.getElementById('enemy-sprite'),
+    enemyHpFill: document.getElementById('enemy-hp-fill'),
+    enemyName: document.getElementById('enemy-name'),
+    enemyDialogue: document.getElementById('enemy-dialogue'),
+
+    // 胜利浮层
+    wordVictory: document.getElementById('word-victory'),
+    wvIcon: document.getElementById('wv-icon'),
+    wvWord: document.getElementById('wv-word'),
+    wvSentence: document.getElementById('wv-sentence'),
+    wvScore: document.getElementById('wv-score'),
 
     // 结果屏幕
     resultTitle: document.getElementById('result-title'),
@@ -256,8 +281,10 @@ function startGame() {
   game.blocks = [];
   game.blockIdCounter = 0;
   game.collectedLetters = [];
+  game.enemyWalking = false;
 
   showScreen('game-screen');
+  applyBiome(getBiome(1));
   updateHUD();
   setupClouds();
   loadNewWord();
@@ -287,6 +314,7 @@ function loadNewWord() {
 
   updateWordDisplay();
   updateInputSlots();
+  spawnEnemy(game.currentWord);
 }
 
 function updateWordDisplay() {
@@ -305,6 +333,19 @@ function updateWordDisplay() {
   dom.wordTarget.textContent = display.trim();
   dom.wordTranslation.textContent = game.currentWord.translation;
   dom.wordHint.textContent = `提示: ${game.currentWord.hint}`;
+
+  // 情景句子（侧边栏）
+  if (dom.wordSentencePanel && game.currentWord.sentence) {
+    const parts = game.currentWord.sentence.split('___');
+    if (parts.length === 2) {
+      dom.wordSentencePanel.innerHTML =
+        escapeHtml(parts[0]) +
+        '<span class="blank-word">___</span>' +
+        escapeHtml(parts[1]);
+    } else {
+      dom.wordSentencePanel.textContent = game.currentWord.sentence;
+    }
+  }
 }
 
 function updateInputSlots() {
@@ -412,6 +453,7 @@ function gameLoop(timestamp) {
   game.lastTime = timestamp;
 
   updateBlocks(dt);
+  updateEnemy(dt);
   movePlayerTowardTarget(dt);
 
   game.animFrame = requestAnimationFrame(gameLoop);
@@ -477,6 +519,7 @@ function onBlockClick(id) {
     showCollectEffect(block.x + block.size / 2, block.y, '+' + getLetterScore());
     game.score += getLetterScore();
     sound.correct();
+    damageEnemy();
 
     // 移动玩家到方块位置
     targetPlayerX = block.x;
@@ -499,7 +542,29 @@ function onBlockClick(id) {
     sound.wrong();
     loseHp(1);
     flashBlock(block, 'wrong');
-    showToast(`错了！需要的是 "${word[nextIdx]}"`, 'danger');
+
+    const nextLetter = word[nextIdx];
+    showToast(`✗ 错了！需要字母 "${nextLetter}"`, 'danger');
+
+    // 敌人攻击玩家特效：敌人短暂向玩家冲刺
+    if (dom.enemyContainer) {
+      const origX = game.enemyX;
+      const rushX = Math.max(origX - 50, game.playerX + 30);
+      dom.enemyContainer.style.transition = 'left 0.15s ease-out';
+      dom.enemyContainer.style.left = rushX + 'px';
+      setTimeout(() => {
+        if (dom.enemyContainer) {
+          dom.enemyContainer.style.transition = 'left 0.3s ease-out';
+          dom.enemyContainer.style.left = origX + 'px';
+          setTimeout(() => { if (dom.enemyContainer) dom.enemyContainer.style.transition = ''; }, 300);
+        }
+      }, 200);
+    }
+    // 玩家受击伤害数字
+    const px = game.playerX + 24;
+    const py = dom.canvas ? dom.canvas.offsetHeight - 160 : 100;
+    showDamageText(px, py, '-1', 'player');
+
     updateHUD();
   }
 
@@ -527,24 +592,30 @@ function completeWord() {
   const wordBonus = 50 * game.level + game.combo * 10;
   game.score += wordBonus;
   game.wordsCompleted++;
+  game.enemyWalking = false;
 
   // 清理同字母的方块
   clearBlocksByLetter(word.word.toUpperCase().split(''));
 
-  showToast(`✓ "${word.word}" = ${word.translation}  +${wordBonus}分`, 'success');
-  sound.complete();
   updateHUD();
   updateLevelProgress();
 
-  setTimeout(() => {
-    if (game.state !== GameState.PLAYING) return;
+  // 击杀动画 → 胜利浮层 → 下一个单词
+  killEnemy(() => {
+    showWordVictory(word, wordBonus);
+    sound.levelUp();
 
-    if (game.wordsCompleted % WORDS_PER_LEVEL === 0) {
-      levelUp();
-    } else {
-      loadNewWord();
-    }
-  }, 1200);
+    setTimeout(() => {
+      if (game.state !== GameState.PLAYING) return;
+      hideWordVictory(() => {
+        if (game.wordsCompleted % WORDS_PER_LEVEL === 0) {
+          levelUp();
+        } else {
+          loadNewWord();
+        }
+      });
+    }, 2200);
+  });
 }
 
 function clearBlocksByLetter(letters) {
@@ -559,6 +630,7 @@ function levelUp() {
   }
 
   game.level++;
+  applyBiome(getBiome(game.level));
   showLevelBanner(`第 ${game.level} 关`);
   sound.levelUp();
 
@@ -605,6 +677,7 @@ function recordMissedWord(word) {
 /* ===================== 游戏结束 ===================== */
 function endGame(win) {
   game.state = GameState.RESULT;
+  game.enemyWalking = false;
 
   // 游戏失败时，当前未完成的单词计入"未答出"列表
   if (!win && game.currentWord &&
@@ -618,6 +691,12 @@ function endGame(win) {
   // 清理所有方块
   game.blocks.forEach(b => b.element && b.element.remove());
   game.blocks = [];
+
+  // 隐藏胜利浮层
+  if (dom.wordVictory) {
+    dom.wordVictory.classList.remove('show');
+    dom.wordVictory.classList.add('hidden');
+  }
 
   setTimeout(() => showResultScreen(win), 800);
 }
@@ -854,12 +933,22 @@ function updateHighScoreDisplays() {
 
 function goToMenu() {
   game.state = GameState.IDLE;
+  game.enemyWalking = false;
   if (game.spawnTimer) clearInterval(game.spawnTimer);
   if (game.animFrame) cancelAnimationFrame(game.animFrame);
   if (game.cloudTimer) clearInterval(game.cloudTimer);
   game.blocks.forEach(b => b.element && b.element.remove());
   game.blocks = [];
   if (dom.pauseOverlay) dom.pauseOverlay.classList.remove('visible');
+  // 重置画布生物群系
+  if (dom.canvas) {
+    ['plains','forest','cave','nether','end'].forEach(b => dom.canvas.classList.remove('biome-' + b));
+  }
+  // 隐藏胜利浮层
+  if (dom.wordVictory) {
+    dom.wordVictory.classList.remove('show');
+    dom.wordVictory.classList.add('hidden');
+  }
   updateHighScoreDisplays();
   showScreen('start-screen');
 }
@@ -915,4 +1004,219 @@ function createStartClouds() {
     `;
     container.appendChild(cloud);
   }
+}
+
+/* ===================== 生物群系系统 ===================== */
+function getBiome(level) {
+  if (level <= 2) return 'plains';
+  if (level <= 4) return 'forest';
+  if (level <= 6) return 'cave';
+  if (level <= 8) return 'nether';
+  return 'end';
+}
+
+function applyBiome(biome) {
+  game.biome = biome;
+  if (!dom.canvas) return;
+  ['plains','forest','cave','nether','end'].forEach(b => dom.canvas.classList.remove('biome-' + b));
+  dom.canvas.classList.add('biome-' + biome);
+}
+
+/* ===================== 敌人系统 ===================== */
+const MOB_NAMES = {
+  zombie:   '🧟 僵尸',
+  spider:   '🕷 蜘蛛',
+  skeleton: '💀 骷髅',
+  creeper:  '💣 苦力怕',
+  blaze:    '🔥 烈焰人',
+  enderman: '👾 末影人',
+};
+
+const MOB_DIALOGUES = [
+  '你能拼出这个单词吗？',
+  '嘿！准备战斗！',
+  '我来啦，阻止我吧！',
+  '你逃不掉的，快拼！',
+  '嘶嘶嘶... 来战！',
+];
+
+function spawnEnemy(word) {
+  if (!dom.enemyContainer || !dom.enemySprite) return;
+
+  const mob = word.mob || 'zombie';
+  game.enemyMob = mob;
+  game.enemyHp = word.word.length;
+  game.enemyMaxHp = word.word.length;
+
+  // 切换怪物外观
+  const sprite = dom.enemySprite;
+  ['mob-zombie','mob-spider','mob-skeleton','mob-creeper','mob-blaze','mob-enderman']
+    .forEach(c => sprite.classList.remove(c));
+  sprite.classList.add('mob-' + mob);
+  sprite.classList.remove('dying', 'hit');
+  sprite.style.opacity = '1';
+
+  // 从屏幕右侧出现
+  const canvas = dom.canvas;
+  game.enemyX = (canvas ? canvas.offsetWidth : 600) + 20;
+  dom.enemyContainer.style.left = game.enemyX + 'px';
+
+  // 名字标签
+  if (dom.enemyName) dom.enemyName.textContent = MOB_NAMES[mob] || mob;
+
+  // HP条满格
+  updateEnemyHpBar();
+
+  // 对话气泡
+  const dialogue = MOB_DIALOGUES[Math.floor(Math.random() * MOB_DIALOGUES.length)];
+  showEnemyDialogue(dialogue);
+
+  game.enemyWalking = true;
+}
+
+function showEnemyDialogue(text) {
+  if (!dom.enemyDialogue) return;
+  dom.enemyDialogue.textContent = text;
+  dom.enemyDialogue.classList.add('show');
+  setTimeout(() => {
+    if (dom.enemyDialogue) dom.enemyDialogue.classList.remove('show');
+  }, 2800);
+}
+
+function updateEnemyHpBar() {
+  if (!dom.enemyHpFill) return;
+  const pct = game.enemyMaxHp > 0 ? (game.enemyHp / game.enemyMaxHp) * 100 : 0;
+  dom.enemyHpFill.style.width = pct + '%';
+}
+
+function updateEnemy(dt) {
+  if (!game.enemyWalking || !dom.enemyContainer) return;
+  const diff = DIFFICULTIES[game.difficulty];
+  game.enemyX -= (diff.enemySpeed || 40) * dt;
+  dom.enemyContainer.style.left = game.enemyX + 'px';
+
+  // 到达玩家位置
+  if (game.enemyX <= game.playerX + 16) {
+    enemyReachesPlayer();
+  }
+}
+
+function enemyReachesPlayer() {
+  game.enemyWalking = false;
+  loseHp(2);
+  showToast('⚠ 怪物攻击！-2 生命值', 'danger');
+  sound.wrong();
+
+  // 弹回屏幕右侧重新走过来
+  const canvas = dom.canvas;
+  game.enemyX = (canvas ? canvas.offsetWidth : 600) - 40;
+  if (dom.enemyContainer) dom.enemyContainer.style.left = game.enemyX + 'px';
+
+  showEnemyDialogue('嗯哼！我还会回来的！');
+
+  setTimeout(() => {
+    if (game.state === GameState.PLAYING) {
+      game.enemyWalking = true;
+    }
+  }, 1400);
+}
+
+function damageEnemy() {
+  if (game.enemyHp <= 0) return;
+  game.enemyHp--;
+  updateEnemyHpBar();
+
+  // 受击闪光动画
+  const sprite = dom.enemySprite;
+  if (sprite) {
+    sprite.classList.remove('hit');
+    void sprite.offsetWidth; // 重置动画帧
+    sprite.classList.add('hit');
+    setTimeout(() => sprite && sprite.classList.remove('hit'), 350);
+  }
+
+  // 受击伤害数字
+  const ex = game.enemyX + 20;
+  const ey = dom.canvas ? dom.canvas.offsetHeight * 0.38 : 140;
+  showDamageText(ex, ey, '⚔-1', 'enemy');
+
+  // 玩家挥击动画
+  if (dom.player) {
+    dom.player.classList.add('swing');
+    setTimeout(() => dom.player && dom.player.classList.remove('swing'), 300);
+  }
+}
+
+function killEnemy(onDone) {
+  game.enemyWalking = false;
+  const sprite = dom.enemySprite;
+  if (sprite) {
+    sprite.classList.add('dying');
+  }
+  // 爆炸提示
+  const ex = game.enemyX + 20;
+  const ey = dom.canvas ? dom.canvas.offsetHeight * 0.4 : 150;
+  showDamageText(ex, ey, '💥', 'enemy');
+
+  setTimeout(() => {
+    if (onDone) onDone();
+  }, 680);
+}
+
+/* ===================== 胜利浮层 ===================== */
+function showWordVictory(word, scoreGained) {
+  if (!dom.wordVictory) return;
+
+  const mobIcons = {
+    zombie: '⚔', spider: '⚔', skeleton: '🏹',
+    creeper: '💥', blaze: '🔥', enderman: '✨'
+  };
+  if (dom.wvIcon) dom.wvIcon.textContent = mobIcons[word.mob] || '⚔';
+
+  if (dom.wvWord) {
+    dom.wvWord.textContent = `${word.word.toUpperCase()}  =  ${word.translation}`;
+  }
+
+  if (dom.wvSentence && word.sentence) {
+    const highlighted = word.sentence.replace(
+      '___',
+      `<span class="highlight-word">${word.word}</span>`
+    );
+    dom.wvSentence.innerHTML = highlighted;
+  }
+
+  if (dom.wvScore) dom.wvScore.textContent = `+${scoreGained} 分`;
+
+  dom.wordVictory.classList.remove('hidden');
+  setTimeout(() => dom.wordVictory.classList.add('show'), 20);
+}
+
+function hideWordVictory(cb) {
+  if (!dom.wordVictory) { if (cb) cb(); return; }
+  dom.wordVictory.classList.remove('show');
+  setTimeout(() => {
+    dom.wordVictory.classList.add('hidden');
+    if (cb) cb();
+  }, 320);
+}
+
+/* ===================== 伤害数字特效 ===================== */
+function showDamageText(x, y, text, type) {
+  if (!dom.canvas) return;
+  const el = document.createElement('div');
+  el.className = `damage-text ${type}`;
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  dom.canvas.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+/* ===================== HTML 转义工具 ===================== */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
